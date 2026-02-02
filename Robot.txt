@@ -1,0 +1,20 @@
+User-agent: *
+Disallow: /search
+Allow: /
+
+Sitemap: https://YOUR-BLOG-URL/feeds/posts/default?alt=atom&max-results=150
+Sitemap: https://YOUR-BLOG-URL/feeds/pages/default?alt=atom
+
+
+
+more than 150
+
+User-agent: *
+Disallow: /search
+Allow: /
+
+Sitemap: https://yourblog.blogspot.com/feeds/posts/default?alt=atom&start-index=1&max-results=150
+Sitemap: https://yourblog.blogspot.com/feeds/posts/default?alt=atom&start-index=151&max-results=150
+Sitemap: https://yourblog.blogspot.com/feeds/posts/default?alt=atom&start-index=301&max-results=150
+Sitemap: https://yourblog.blogspot.com/feeds/posts/default?alt=atom&start-index=451&max-results=150
+Sitemap: https://yourblog.blogspot.com/feeds/posts/default?alt=atom&start-index=601&max-results=150
