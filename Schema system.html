@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Universal Schema Generator</title>
+
+<style>
+body{
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+  background:#f6f7f9;
+  padding:20px;
+  color:#222;
+}
+.wrapper{
+  max-width:980px;
+  margin:auto;
+  background:#fff;
+  padding:20px;
+  border-radius:8px;
+  box-shadow:0 8px 25px rgba(0,0,0,.05);
+}
+h2,h3{margin:0 0 10px}
+label{
+  display:block;
+  margin-top:12px;
+  font-weight:600;
+}
+input,textarea,select{
+  width:100%;
+  padding:8px;
+  margin-top:6px;
+  border:1px solid #ccc;
+  border-radius:4px;
+  font-size:14px;
+}
+textarea{min-height:80px}
+button{
+  margin-top:18px;
+  padding:10px 16px;
+  border:none;
+  border-radius:4px;
+  background:#2563eb;
+  color:#fff;
+  cursor:pointer;
+}
+button.copy{background:#374151;margin-left:10px}
+pre{
+  margin-top:20px;
+  background:#111;
+  color:#0f0;
+  padding:15px;
+  border-radius:6px;
+  white-space:pre-wrap;
+  overflow:auto;
+}
+.warning{
+  background:#fff7ed;
+  border:1px solid #fed7aa;
+  color:#9a3412;
+  padding:10px;
+  border-radius:6px;
+  margin-top:15px;
+}
+.warning ul{margin:0;padding-left:20px}
+hr{margin:20px 0;border:none;border-top:1px solid #eee}
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+<h2>Universal Schema Generator</h2>
+
+<label>Page Type</label>
+<select id="pageType">
+  <option value="page">Static Page</option>
+  <option value="post">Post / Article</option>
+</select>
+
+<hr>
+
+<h3>Site Information</h3>
+<label>Site Name</label><input id="siteName">
+<label>Site URL (https://)</label><input id="siteUrl">
+<label>Publisher Logo (512×512)</label><input id="logoUrl">
+
+<hr>
+
+<h3>Page / Post URL</h3>
+<label>URL</label><input id="postUrl">
+
+<div id="postSection" style="display:none">
+
+<hr>
+
+<h3>Article Information</h3>
+<label>Headline</label><input id="headline">
+<label>Description</label><textarea id="description"></textarea>
+<label>Featured Image (1200×630)</label><input id="imageUrl">
+<label>Publish Date (ISO)</label><input id="datePublished">
+<label>Modified Date (ISO)</label><input id="dateModified">
+<label>Author Name</label><input id="authorName">
+<label>Author URL</label><input id="authorUrl">
+<label>Category</label><input id="category">
+<label>Keywords (comma separated)</label><input id="keywords">
+<label>Full Article Text (plain text)</label><textarea id="articleBody"></textarea>
+
+</div>
+
+<hr>
+
+<h3>FAQ (max 5)</h3>
+<label>Q1</label><input id="q1"><label>A1</label><textarea id="a1"></textarea>
+<label>Q2</label><input id="q2"><label>A2</label><textarea id="a2"></textarea>
+<label>Q3</label><input id="q3"><label>A3</label><textarea id="a3"></textarea>
+<label>Q4</label><input id="q4"><label>A4</label><textarea id="a4"></textarea>
+<label>Q5</label><input id="q5"><label>A5</label><textarea id="a5"></textarea>
+
+<button onclick="generateSchema()">Generate Schema</button>
+<button class="copy" onclick="copySchema()">Copy</button>
+
+<div id="warnings"></div>
+<pre id="output"></pre>
+</div>
+
+<script>
+pageType.onchange = () => {
+  postSection.style.display = pageType.value === "post" ? "block" : "none";
+};
+
+function warn(list){
+  if(!list.length){
+    warnings.innerHTML="";
+    return;
+  }
+  warnings.innerHTML =
+    `<div class="warning"><strong>Schema validation warnings:</strong><ul>` +
+    list.map(w=>`<li>${w}</li>`).join("") +
+    `</ul></div>`;
+}
+
+function faq(q,a){
+  return q && a ? {
+    "@type":"Question",
+    "name":q.trim(),
+    "acceptedAnswer":{"@type":"Answer","text":a.trim()}
+  } : null;
+}
+
+function generateSchema(){
+  const issues = [];
+  const graph = [];
+
+  if(!siteName.value) issues.push("Site name is missing.");
+  if(!siteUrl.value) issues.push("Site URL is missing.");
+  if(!logoUrl.value) issues.push("Publisher logo URL is missing.");
+  if(!postUrl.value) issues.push("Page/Post URL is missing.");
+
+  graph.push({
+    "@type":"Organization",
+    "@id":siteUrl.value+"#organization",
+    "name":siteName.value,
+    "url":siteUrl.value,
+    "logo":{
+      "@type":"ImageObject",
+      "url":logoUrl.value,
+      "width":512,
+      "height":512
+    }
+  });
+
+  graph.push({
+    "@type":"WebSite",
+    "@id":siteUrl.value+"#website",
+    "url":siteUrl.value,
+    "name":siteName.value,
+    "publisher":{"@id":siteUrl.value+"#organization"},
+    "inLanguage":"en"
+  });
+
+  if(pageType.value==="post"){
+    if(!headline.value) issues.push("Article headline is missing.");
+    if(!description.value) issues.push("Article description is missing.");
+    if(!imageUrl.value) issues.push("Featured image URL is missing.");
+    if(!datePublished.value) issues.push("Publish date is missing.");
+    if(!authorName.value) issues.push("Author name is missing.");
+
+    graph.push({
+      "@type":"Article",
+      "@id":postUrl.value+"#article",
+      "mainEntityOfPage":{"@type":"WebPage","@id":postUrl.value},
+      "headline":headline.value,
+      "description":description.value,
+      "image":{"@type":"ImageObject","url":imageUrl.value,"width":1200,"height":630},
+      "datePublished":datePublished.value,
+      "dateModified":dateModified.value || datePublished.value,
+      "author":{"@type":"Person","name":authorName.value,"url":authorUrl.value},
+      "publisher":{"@id":siteUrl.value+"#organization"},
+      "articleSection":category.value,
+      "keywords":keywords.value.split(",").map(k=>k.trim()).filter(Boolean),
+      "articleBody":articleBody.value,
+      "isAccessibleForFree":true,
+      "inLanguage":"en"
+    });
+  }
+
+  const faqs = [
+    faq(q1.value,a1.value),
+    faq(q2.value,a2.value),
+    faq(q3.value,a3.value),
+    faq(q4.value,a4.value),
+    faq(q5.value,a5.value)
+  ].filter(Boolean);
+
+  if(faqs.length){
+    graph.push({
+      "@type":"FAQPage",
+      "@id":postUrl.value+"#faq",
+      "mainEntity":faqs
+    });
+  }
+
+  warn(issues);
+
+  const schema={
+    "@context":"https://schema.org",
+    "@graph":graph
+  };
+
+  output.textContent =
+`<script type="application/ld+json">
+${JSON.stringify(schema,null,2)}
+</script>`;
+}
+
+function copySchema(){
+  navigator.clipboard.writeText(output.textContent);
+  alert("Schema copied");
+}
+</script>
+
+</body>
+</html>
